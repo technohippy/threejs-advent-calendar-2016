@@ -1,0 +1,93 @@
+<html>
+  <head>
+    <title>Clipping Demo</title>
+    <style>
+      body { margin: 0; }
+      canvas { width: 100%; height: 100% }
+    </style>
+  </head>
+  <body>
+    <script src="threejs/build/three.js"></script>
+    <script src="threejs/examples/js/libs/dat.gui.min.js"></script>
+    <script>
+      let scene = new THREE.Scene();
+      let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+      camera.position.z = 300;
+
+      let renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      let plane1 = new THREE.Plane(new THREE.Vector3(1, 0, 0), -30);
+      let plane2 = new THREE.Plane(new THREE.Vector3(0, 1, 0), -30);
+      renderer.clippingPlanes.push(plane1);
+      renderer.clippingPlanes.push(plane2);
+      renderer.localClippingEnabled = true;
+
+      let light = new THREE.DirectionalLight(0xffffff, 1.0);
+      light.castShadow = true;
+      light.shadow.mapSize.set(1024, 1024);
+      light.shadow.camera.left = -1000;
+      light.shadow.camera.right = 1000;
+      light.shadow.camera.top = 1000;
+      light.shadow.camera.bottom = -1000;
+      light.position.set(0.5, 1, 0.5);
+      scene.add(light);
+      light = new THREE.DirectionalLight(0xccccff, 0.8);
+      light.position.set(-1, -1, -1);
+      scene.add(light);
+
+      let geometry = new THREE.TorusKnotGeometry(100, 40, 128, 32);
+      let material = new THREE.MeshPhongMaterial({color: 0x6666ff, side:THREE.DoubleSide});
+      material.clippingPlanes = [];
+      let torusKnot = new THREE.Mesh(geometry, material);
+      torusKnot.castShadow = true;
+      scene.add(torusKnot);
+
+      let geometry2 = new THREE.PlaneGeometry(1000, 1000);
+      let material2 = new THREE.MeshPhongMaterial({color: 0x6666ff});
+      let ground = new THREE.Mesh(geometry2, material2);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y -= 200;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      let render = function () {
+        requestAnimationFrame(render);
+        torusKnot.rotation.x += 0.01;
+        torusKnot.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      };
+      render();
+
+      let settings = {
+        target: 'renderer',
+        plane1: -30,
+        plane2: -30,
+      };
+      let gui = new dat.GUI();
+      gui.add(settings, 'target', ['renderer', 'material']).onChange(function() {
+        if (settings.target === 'renderer') {
+          material.clippingPlanes.splice(0, 2);
+          renderer.clippingPlanes.push(plane1);
+          renderer.clippingPlanes.push(plane2);
+        }
+        else if (settings.target === 'material') {
+          renderer.clippingPlanes.splice(0, 2);
+          material.clippingPlanes.push(plane1);
+          material.clippingPlanes.push(plane2);
+        }
+      });
+      gui.add(settings, 'plane1', -50, 50).onChange(function() {
+        plane1.constant = settings.plane1;
+      });
+      gui.add(settings, 'plane2', -50, 50).onChange(function() {
+        plane2.constant = settings.plane2;
+      });
+      gui.add(renderer, 'localClippingEnabled');
+      gui.add(material, 'clipIntersection');
+      gui.add(material, 'clipShadows');
+    </script>
+  </body>
+</html>
